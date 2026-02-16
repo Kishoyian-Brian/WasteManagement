@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Rictei Smart Waste</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav class="nav nav-admin">
+    <a href="../index.html" class="nav-brand">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Rictei Smart City
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../report.html">Report Waste</a></li>
+      <li><a href="index.html" class="active">Admin</a></li>
+      <li><a href="../collector/index.html">Collector Portal</a></li>
+    </ul>
+  </nav>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2 class="sidebar-title">Admin</h2>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" data-panel="dashboard">
+          <span class="sidebar-icon">📊</span> Dashboard
+        </a>
+        <a href="#" class="sidebar-link" data-panel="pending">
+          <span class="sidebar-icon">⏳</span> Pending Reports
+        </a>
+        <a href="#" class="sidebar-link" data-panel="add-drive">
+          <span class="sidebar-icon">➕</span> Add New Drive
+        </a>
+        <a href="#" class="sidebar-link" data-panel="bins">
+          <span class="sidebar-icon">🗑️</span> Smart Bins
+        </a>
+        <a href="#" class="sidebar-link" data-panel="heatmap">
+          <span class="sidebar-icon">🗺️</span> Heat Map
+        </a>
+        <a href="#" class="sidebar-link" data-panel="all-reports">
+          <span class="sidebar-icon">📋</span> All Reports
+        </a>
+        <a href="#" class="sidebar-link" data-panel="collectors">
+          <span class="sidebar-icon">👷</span> Collectors
+        </a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <!-- Dashboard panel -->
+      <section id="panel-dashboard" class="admin-panel active">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Overview of waste reports and system status.</p>
+        <div class="stats-row">
+          <div class="card stat-card">
+            <h3>Total Reports</h3>
+            <span class="card-value" id="stat-total">0</span>
+            <p>All time</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Pending</h3>
+            <span class="card-value" id="stat-pending">0</span>
+            <p>Awaiting approval</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Approved</h3>
+            <span class="card-value" id="stat-approved">0</span>
+            <p>Sent to collectors</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Collected</h3>
+            <span class="card-value" id="stat-collected">0</span>
+            <p>Completed</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pending Reports panel -->
+      <section id="panel-pending" class="admin-panel">
+        <h1 class="page-title">Pending Reports</h1>
+        <p class="page-subtitle">Approve or reject reports before they go to collectors.</p>
+        <div class="report-section">
+          <div id="pending-list" class="report-list">
+            <p class="empty-state" id="pending-empty">No pending reports. <a href="../report.html">Submit a report</a> to test the flow.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add New Drive panel -->
+      <section id="panel-add-drive" class="admin-panel">
+        <h1 class="page-title">Add New Drive</h1>
+        <p class="page-subtitle">Schedule a new collection drive or route.</p>
+        <div class="form-card" style="max-width: 520px;">
+          <form id="add-drive-form">
+            <div class="form-group">
+              <label for="drive-name">Drive name</label>
+              <input type="text" id="drive-name" placeholder="e.g. North Zone Weekly" required>
+            </div>
+            <div class="form-group">
+              <label for="drive-zone">Zone / Area</label>
+              <input type="text" id="drive-zone" placeholder="e.g. North District, Block A">
+            </div>
+            <div class="form-group">
+              <label for="drive-schedule">Schedule</label>
+              <select id="drive-schedule">
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Bi-weekly</option>
+                <option value="daily">Daily</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="drive-collector">Assigned collector</label>
+              <select id="drive-collector">
+                <option value="">— Select —</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create drive</button>
+          </form>
+          <p id="drive-message" class="form-message" style="display:none; margin-top:1rem;"></p>
+        </div>
+      </section>
+
+      <!-- Smart Bins panel -->
+      <section id="panel-bins" class="admin-panel">
+        <h1 class="page-title">Smart Bin Status</h1>
+        <p class="page-subtitle">Monitor fill levels across bins.</p>
+        <div class="bin-status-section">
+          <div class="bin-list">
+            <div class="bin-item">
+              <div class="bin-visual">
+                <div class="bin-fill urgent" style="height: 90%;"></div>
+              </div>
+              <span class="bin-label">Bin #101</span>
+              <span class="bin-badge urgent">Urgent</span>
+            </div>
+            <div class="bin-item">
+              <div class="bin-visual">
+                <div class="bin-fill warning" style="height: 65%;"></div>
+              </div>
+              <span class="bin-label">Bin #102</span>
+              <span class="bin-badge warning">High</span>
+            </div>
+            <div class="bin-item">
+              <div class="bin-visual">
+                <div class="bin-fill ok" style="height: 30%;"></div>
+              </div>
+              <span class="bin-label">Bin #103</span>
+              <span class="bin-badge ok">Normal</span>
+            </div>
+            <div class="bin-item">
+              <div class="bin-visual">
+                <div class="bin-fill ok" style="height: 15%;"></div>
+              </div>
+              <span class="bin-label">Bin #104</span>
+              <span class="bin-badge ok">Normal</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Heat Map panel -->
+      <section id="panel-heatmap" class="admin-panel">
+        <h1 class="page-title">Collection Heat Map</h1>
+        <p class="page-subtitle">Where waste is collected most — hotspots by location.</p>
+        <div class="heatmap-card">
+          <div class="heatmap-legend">
+            <span>Low</span>
+            <div class="heatmap-legend-bar"></div>
+            <span>High</span>
+          </div>
+          <div id="heatmap-list" class="heatmap-list"></div>
+          <p id="heatmap-empty" class="empty-state" style="display:none;">No collection data yet. Collections will appear here once reports are marked collected.</p>
+        </div>
+      </section>
+
+      <!-- All Reports panel -->
+      <section id="panel-all-reports" class="admin-panel">
+        <h1 class="page-title">All Reports</h1>
+        <p class="page-subtitle">Full list of waste reports (all statuses).</p>
+        <div class="report-section">
+          <div id="all-reports-list" class="report-list"></div>
+        </div>
+      </section>
+
+      <!-- Collectors panel -->
+      <section id="panel-collectors" class="admin-panel">
+        <h1 class="page-title">Collectors</h1>
+        <p class="page-subtitle">Registered collector accounts.</p>
+        <div class="report-section">
+          <div id="collectors-list" class="collectors-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p>© 2026 Rictei Municipal Government — Smart City Waste Management</p>
+  </footer>
+
+  <script src="../js/data.js"></script>
+  <script>
+    function showPanel(panelId) {
+      document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.querySelectorAll('.sidebar-link').forEach(function(a) { a.classList.remove('active'); });
+      var panel = document.getElementById('panel-' + panelId);
+      var link = document.querySelector('.sidebar-link[data-panel="' + panelId + '"]');
+      if (panel) panel.classList.add('active');
+      if (link) link.classList.add('active');
+    }
+
+    document.querySelectorAll('.sidebar-link').forEach(function(a) {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        showPanel(a.dataset.panel);
+      });
+    });
+
+    function renderHeatMap() {
+      var locations = WasteData.getCollectionLocations();
+      var list = document.getElementById('heatmap-list');
+      var empty = document.getElementById('heatmap-empty');
+      list.innerHTML = '';
+      if (locations.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      var maxCount = Math.max.apply(null, locations.map(function(l) { return l.count; })) || 1;
+      locations.forEach(function(item) {
+        var pct = Math.round((item.count / maxCount) * 100);
+        var el = document.createElement('div');
+        el.className = 'heatmap-item';
+        el.innerHTML = '<span class="heatmap-label">' + escapeHtml(item.location) + '</span>' +
+          '<div class="heatmap-bar-wrap"><div class="heatmap-bar" style="width:' + pct + '%;"></div></div>' +
+          '<span class="heatmap-count">' + item.count + ' collection' + (item.count !== 1 ? 's' : '') + '</span>';
+        list.appendChild(el);
+      });
+    }
+
+    function escapeHtml(s) {
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function renderAllReports() {
+      var all = WasteData.getAll();
+      var list = document.getElementById('all-reports-list');
+      list.innerHTML = '';
+      all.forEach(function(r) {
+        var card = document.createElement('div');
+        card.className = 'report-card report-card-done';
+        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + (r.id || '').slice(1, 9) + '</span><span class="report-badge ' + r.status + '">' + r.status + '</span></div>' +
+          '<div class="report-card-body"><p><strong>' + escapeHtml(r.name || 'Anonymous') + '</strong> — ' + escapeHtml(r.location || 'Unknown') + '</p>' +
+          '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>';
+        list.appendChild(card);
+      });
+      if (all.length === 0) list.innerHTML = '<p class="empty-state">No reports yet.</p>';
+    }
+
+    function renderCollectors() {
+      var collectors = WasteData.getCollectors();
+      var list = document.getElementById('collectors-list');
+      var select = document.getElementById('drive-collector');
+      list.innerHTML = '';
+      if (select) {
+        select.innerHTML = '<option value="">— Select —</option>';
+        collectors.forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.username;
+          opt.textContent = c.username;
+          select.appendChild(opt);
+        });
+      }
+      collectors.forEach(function(c) {
+        var el = document.createElement('div');
+        el.className = 'collector-item';
+        el.textContent = c.username;
+        list.appendChild(el);
+      });
+      if (collectors.length === 0) list.innerHTML = '<p class="empty-state">No collectors registered.</p>';
+    }
+
+    function render() {
+      var all = WasteData.getAll();
+      var pending = WasteData.getPending();
+      var approved = WasteData.getApproved();
+      var collected = WasteData.getCollected();
+
+      document.getElementById('stat-total').textContent = all.length;
+      document.getElementById('stat-pending').textContent = pending.length;
+      document.getElementById('stat-approved').textContent = approved.length;
+      document.getElementById('stat-collected').textContent = collected.length;
+
+      var list = document.getElementById('pending-list');
+      var empty = document.getElementById('pending-empty');
+      if (empty) empty.style.display = pending.length ? 'none' : 'block';
+
+      if (list) {
+        list.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
+        pending.forEach(function(r) {
+          var card = document.createElement('div');
+          card.className = 'report-card';
+          card.dataset.id = r.id;
+          card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge pending">Pending</span></div>' +
+            '<div class="report-card-body"><p><strong>' + (r.name || 'Anonymous') + '</strong> — ' + (r.location || 'Unknown') + '</p>' +
+            '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>' +
+            '<div class="report-card-actions"><button class="btn btn-approve" data-id="' + r.id + '">Approve</button><button class="btn btn-reject" data-id="' + r.id + '">Reject</button></div>';
+          list.appendChild(card);
+        });
+
+        list.querySelectorAll('.btn-approve').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            if (WasteData.approve(btn.dataset.id)) render();
+          });
+        });
+        list.querySelectorAll('.btn-reject').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            if (WasteData.reject(btn.dataset.id)) render();
+          });
+        });
+      }
+
+      renderHeatMap();
+      renderAllReports();
+      renderCollectors();
+    }
+
+    document.getElementById('add-drive-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var name = document.getElementById('drive-name').value.trim();
+      var zone = document.getElementById('drive-zone').value.trim();
+      var schedule = document.getElementById('drive-schedule').value;
+      var collector = document.getElementById('drive-collector').value;
+      var msg = document.getElementById('drive-message');
+      msg.style.display = 'block';
+      msg.textContent = 'Drive “‘ + name + '” created for ' + (zone || 'general area') + ' (' + schedule + ')' + (collector ? ', assigned to ' + collector : '') + '.';
+      msg.style.color = 'var(--status-ok)';
+    });
+
+    render();
+  </script>
+
+</body>
+</html>

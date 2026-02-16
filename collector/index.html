@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collector Dashboard — Rictei Smart Waste</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav class="nav nav-collector">
+    <a href="../index.html" class="nav-brand">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Rictei Smart City
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../report.html">Report Waste</a></li>
+      <li><a href="../admin/index.html">Admin Portal</a></li>
+      <li><a href="index.html" class="active">Collector</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1 class="page-title">Collector Dashboard</h1>
+    <p style="color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1.5rem;">You receive approved waste reports from the admin. Complete collections below.</p>
+
+    <div class="notification-banner" id="notification-banner" style="display: none;">
+      <span class="notification-icon">✓</span>
+      <span>Admin has approved new waste reports. See assignments below.</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="card stat-card">
+        <h3>Assigned</h3>
+        <span class="card-value" id="stat-assigned">0</span>
+        <p>Approved by admin</p>
+      </div>
+      <div class="card stat-card">
+        <h3>Completed</h3>
+        <span class="card-value" id="stat-completed">0</span>
+        <p>Collected today</p>
+      </div>
+    </div>
+
+    <section class="report-section">
+      <h3>Notifications — Approved Collection Assignments</h3>
+      <div id="assigned-list" class="report-list">
+        <p class="empty-state" id="assigned-empty">No approved reports yet. Admin must approve reports first.</p>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <h3>Recently Collected</h3>
+      <div id="collected-list" class="report-list">
+        <p class="empty-state" id="collected-empty">No completed collections.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Rictei Municipal Government — Smart City Waste Management</p>
+  </footer>
+
+  <script src="../js/data.js"></script>
+  <script>
+    function render() {
+      var approved = WasteData.getApproved();
+      var collected = WasteData.getCollected();
+
+      document.getElementById('stat-assigned').textContent = approved.length;
+      document.getElementById('stat-completed').textContent = collected.length;
+
+      document.getElementById('notification-banner').style.display = approved.length ? 'flex' : 'none';
+
+      var assignedList = document.getElementById('assigned-list');
+      document.getElementById('assigned-empty').style.display = approved.length ? 'none' : 'block';
+      assignedList.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
+
+      approved.forEach(function(r) {
+        var card = document.createElement('div');
+        card.className = 'report-card notification-card';
+        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge approved">Approved</span></div>' +
+          '<div class="report-card-body"><p><strong>' + (r.name || 'Anonymous') + '</strong> — ' + (r.location || 'Unknown') + '</p>' +
+          '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>' +
+          '<div class="report-card-actions"><button class="btn btn-primary btn-collect" data-id="' + r.id + '">Mark Collected</button></div>';
+        assignedList.appendChild(card);
+      });
+
+      assignedList.querySelectorAll('.btn-collect').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (WasteData.markCollected(btn.dataset.id)) {
+            render();
+          }
+        });
+      });
+
+      var collectedList = document.getElementById('collected-list');
+      document.getElementById('collected-empty').style.display = collected.length ? 'none' : 'block';
+      collectedList.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
+
+      collected.slice(0, 10).forEach(function(r) {
+        var card = document.createElement('div');
+        card.className = 'report-card report-card-done';
+        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge collected">Collected</span></div>' +
+          '<div class="report-card-body"><p>' + (r.location || 'Unknown') + '</p><p class="report-meta">' + (r.wasteType || 'N/A') + '</p></div>';
+        collectedList.appendChild(card);
+      });
+    }
+    render();
+  </script>
+
+</body>
+</html>
