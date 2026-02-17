@@ -40,9 +40,6 @@
         <a href="#" class="sidebar-link" data-panel="add-drive">
           <span class="sidebar-icon">➕</span> Add New Drive
         </a>
-        <a href="#" class="sidebar-link" data-panel="bins">
-          <span class="sidebar-icon">🗑️</span> Smart Bins
-        </a>
         <a href="#" class="sidebar-link" data-panel="heatmap">
           <span class="sidebar-icon">🗺️</span> Heat Map
         </a>
@@ -292,44 +289,6 @@
         </div>
       </section>
 
-      <!-- Smart Bins panel -->
-      <section id="panel-bins" class="admin-panel">
-        <h1 class="page-title">Smart Bin Status</h1>
-        <p class="page-subtitle">Monitor fill levels across bins.</p>
-        <div class="bin-status-section">
-          <div class="bin-list">
-            <div class="bin-item">
-              <div class="bin-visual">
-                <div class="bin-fill urgent" style="height: 90%;"></div>
-              </div>
-              <span class="bin-label">Bin #101</span>
-              <span class="bin-badge urgent">Urgent</span>
-            </div>
-            <div class="bin-item">
-              <div class="bin-visual">
-                <div class="bin-fill warning" style="height: 65%;"></div>
-              </div>
-              <span class="bin-label">Bin #102</span>
-              <span class="bin-badge warning">High</span>
-            </div>
-            <div class="bin-item">
-              <div class="bin-visual">
-                <div class="bin-fill ok" style="height: 30%;"></div>
-              </div>
-              <span class="bin-label">Bin #103</span>
-              <span class="bin-badge ok">Normal</span>
-            </div>
-            <div class="bin-item">
-              <div class="bin-visual">
-                <div class="bin-fill ok" style="height: 15%;"></div>
-              </div>
-              <span class="bin-label">Bin #104</span>
-              <span class="bin-badge ok">Normal</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Heat Map panel -->
       <section id="panel-heatmap" class="admin-panel">
         <h1 class="page-title">Collection Heat Map - Tharaka Nithi County</h1>
@@ -337,14 +296,14 @@
         
         <!-- Map Container -->
         <div class="heatmap-card" style="margin-bottom: 1.5rem;">
-          <div id="heatmap-map" style="height: 500px; border-radius: var(--radius-sm); overflow: hidden;"></div>
+          <div id="heatmap-map" style="height: 500px; border-radius: var(--radius-sm); overflow: hidden; background: #e8f5e9;"></div>
           <div class="heatmap-legend" style="margin-top: 1rem;">
             <span>Low Activity</span>
             <div class="heatmap-legend-bar" style="background: linear-gradient(to right, #ffebee 0%, #ffcdd2 25%, #ef9a9a 50%, #e57373 75%, #c0392b 100%);"></div>
             <span>High Activity (Red Zones)</span>
             <span style="margin-left: 1rem; font-size: 0.85rem; color: var(--text-muted);">Red areas = Most garbage collected</span>
           </div>
-          <p id="heatmap-empty" class="empty-state" style="display:none; margin-top: 1rem;">No collection data yet. Collections will appear here once reports are marked collected.</p>
+          <p id="heatmap-empty" class="empty-state" style="display:none; margin-top: 1rem; padding: 1rem; background: var(--bg-light); border-radius: var(--radius-sm);">No collection data yet. Collections will appear here once reports are marked collected. The map shows Tharaka Nithi County boundaries.</p>
         </div>
 
         <!-- Management Plan Section -->

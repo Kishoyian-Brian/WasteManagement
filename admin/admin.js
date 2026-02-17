@@ -17,6 +17,12 @@
     if (panelId === 'heatmap') {
       setTimeout(function() {
         renderHeatMap();
+        // Invalidate map size to ensure it renders correctly
+        if (heatMapInstance) {
+          setTimeout(function() {
+            heatMapInstance.invalidateSize();
+          }, 200);
+        }
       }, 100);
     } else if (panelId === 'dashboard') {
       renderDashboard();
@@ -52,22 +58,30 @@
   function renderHeatMap() {
     var locations = WasteData.getCollectionLocations();
     var mapContainer = document.getElementById('heatmap-map');
+    var heatmapPanel = document.getElementById('panel-heatmap');
     var empty = document.getElementById('heatmap-empty');
     var planContent = document.getElementById('management-plan-content');
     
+    // Check if heatmap panel is visible before initializing map
+    if (!mapContainer || !heatmapPanel) return;
+    
+    var isPanelVisible = heatmapPanel.classList.contains('active');
+    
+    // Always show the map container
+    mapContainer.style.display = 'block';
+    
+    // Show/hide empty message based on data
     if (locations.length === 0) {
       if (empty) empty.style.display = 'block';
-      if (mapContainer) mapContainer.style.display = 'none';
-      if (planContent) planContent.innerHTML = '<div class="plan-card"><p class="empty-state">No collection data available for analysis.</p></div>';
-      return;
+      if (planContent) planContent.innerHTML = '<div class="plan-card"><p class="empty-state">No collection data available for analysis. The map will show heat zones once collections are completed.</p></div>';
+    } else {
+      if (empty) empty.style.display = 'none';
     }
-    
-    if (empty) empty.style.display = 'none';
-    if (mapContainer) mapContainer.style.display = 'block';
 
     // Initialize or clear map
     if (heatMapInstance) {
       heatMapInstance.remove();
+      heatMapInstance = null;
     }
     
     if (!mapContainer) return;
@@ -80,20 +94,42 @@
       [-0.1, 38.1]   // Northeast
     ];
     
-    // Create map centered on Tharaka Nithi County
-    heatMapInstance = L.map('heatmap-map').setView(countyCenter, 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(heatMapInstance);
+    // Only initialize map if panel is visible, or initialize and invalidate later
+    if (!isPanelVisible && heatMapInstance) {
+      // Panel is hidden, don't reinitialize, just return
+      return;
+    }
+    
+    // Always create map centered on Tharaka Nithi County
+    if (!heatMapInstance) {
+      heatMapInstance = L.map('heatmap-map').setView(countyCenter, 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(heatMapInstance);
 
-    // Add county boundary rectangle (visual reference)
-    L.rectangle(countyBounds, {
-      color: '#0d5c3d',
-      weight: 2,
-      fillColor: 'transparent',
-      fillOpacity: 0,
-      dashArray: '5, 5'
-    }).addTo(heatMapInstance).bindPopup('<strong>Tharaka Nithi County</strong>');
+      // Add county boundary rectangle (visual reference)
+      L.rectangle(countyBounds, {
+        color: '#0d5c3d',
+        weight: 2,
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        dashArray: '5, 5'
+      }).addTo(heatMapInstance).bindPopup('<strong>Tharaka Nithi County</strong>');
+      
+      // Fit map to county bounds initially
+      heatMapInstance.fitBounds(countyBounds);
+    }
+    
+    // If no locations, just show the county map and return
+    if (locations.length === 0) {
+      // Invalidate size if panel just became visible
+      if (isPanelVisible) {
+        setTimeout(function() {
+          if (heatMapInstance) heatMapInstance.invalidateSize();
+        }, 100);
+      }
+      return;
+    }
 
     // Get collected reports with location data
     var collected = WasteData.getCollected();
@@ -185,14 +221,12 @@
       );
     });
 
-    // Fit map to county bounds or markers
+    // Fit map to markers if we have them, otherwise keep county bounds
     if (bounds.length > 0) {
       var group = new L.featureGroup(markers.map(function(m) {
         return L.marker([m.lat, m.lng]);
       }));
       heatMapInstance.fitBounds(group.getBounds().pad(0.1));
-    } else {
-      heatMapInstance.fitBounds(countyBounds);
     }
 
     // Generate management plan
@@ -806,7 +840,11 @@
   function render() {
     renderDashboard();
     renderPendingReports();
-    renderHeatMap();
+    // Only render heatmap if panel is visible (will be rendered when panel is shown)
+    var heatmapPanel = document.getElementById('panel-heatmap');
+    if (heatmapPanel && heatmapPanel.classList.contains('active')) {
+      renderHeatMap();
+    }
     renderAllReports();
     renderCollectors();
   }

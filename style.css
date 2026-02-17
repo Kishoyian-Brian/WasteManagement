@@ -1173,7 +1173,7 @@ footer a {
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  max-width: 640px;
+  width: 100%;
 }
 
 .heatmap-legend {
