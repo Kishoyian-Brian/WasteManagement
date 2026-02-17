@@ -69,9 +69,13 @@
 
   function renderCollectors() {
     var collectors = WasteData.getCollectors();
-    var list = document.getElementById('collectors-list');
+    var tbody = document.getElementById('collectors-list');
+    var tableEl = document.getElementById('collectors-table');
+    var emptyEl = document.getElementById('collectors-empty');
     var select = document.getElementById('drive-collector');
-    if (list) list.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = collectors.length === 0 ? 'block' : 'none';
+    if (tableEl) tableEl.style.display = collectors.length ? 'table' : 'none';
     if (select) {
       select.innerHTML = '<option value="">— Select —</option>';
       collectors.forEach(function(c) {
@@ -81,14 +85,21 @@
         select.appendChild(opt);
       });
     }
-    if (list) {
+    if (tbody) {
       collectors.forEach(function(c) {
-        var el = document.createElement('div');
-        el.className = 'collector-item';
-        el.textContent = c.username;
-        list.appendChild(el);
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="collector-username">' + escapeHtml(c.username) + '</td>' +
+          '<td><span class="report-badge collected">Collector</span></td>' +
+          '<td><span class="status-badge status-active">Active</span></td>' +
+          '<td><button type="button" class="btn btn-remove-collector" data-username="' + escapeHtml(c.username) + '" title="Remove collector">Remove</button></td>';
+        tbody.appendChild(tr);
       });
-      if (collectors.length === 0) list.innerHTML = '<p class="empty-state">No collectors registered.</p>';
+      tbody.querySelectorAll('.btn-remove-collector').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (WasteData.removeUser(btn.dataset.username)) render();
+        });
+      });
     }
   }
 
@@ -154,6 +165,63 @@
         msg.style.display = 'block';
         msg.textContent = 'Drive "' + name + '" created for ' + (zone || 'general area') + ' (' + schedule + ')' + (collector ? ', assigned to ' + collector : '') + '.';
         msg.style.color = 'var(--status-ok)';
+      }
+    });
+  }
+
+  var btnShowAddCollector = document.getElementById('btn-show-add-collector');
+  var addCollectorFormWrap = document.getElementById('add-collector-form-wrap');
+  var btnCloseAddCollector = document.getElementById('btn-close-add-collector');
+
+  function closeAddCollectorModal() {
+    if (addCollectorFormWrap) addCollectorFormWrap.classList.add('is-hidden');
+  }
+
+  function openAddCollectorModal() {
+    if (addCollectorFormWrap) addCollectorFormWrap.classList.remove('is-hidden');
+  }
+
+  if (btnShowAddCollector && addCollectorFormWrap) {
+    btnShowAddCollector.addEventListener('click', openAddCollectorModal);
+  }
+  if (btnCloseAddCollector) {
+    btnCloseAddCollector.addEventListener('click', closeAddCollectorModal);
+  }
+  if (addCollectorFormWrap) {
+    addCollectorFormWrap.addEventListener('click', function(e) {
+      if (e.target === addCollectorFormWrap) closeAddCollectorModal();
+    });
+  }
+
+  var addCollectorForm = document.getElementById('add-collector-form');
+  if (addCollectorForm) {
+    addCollectorForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var username = document.getElementById('collector-username').value.trim();
+      var password = document.getElementById('collector-password').value;
+      var confirmPassword = document.getElementById('collector-password-confirm').value;
+      var msg = document.getElementById('collector-message');
+      if (!msg) return;
+      msg.style.display = 'block';
+      if (password !== confirmPassword) {
+        msg.textContent = 'Passwords do not match.';
+        msg.style.color = 'var(--status-urgent)';
+        return;
+      }
+      if (password.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        msg.style.color = 'var(--status-urgent)';
+        return;
+      }
+      if (WasteData.registerUser(username, password, 'collector')) {
+        msg.textContent = 'Collector "' + username + '" added.';
+        msg.style.color = 'var(--status-ok)';
+        addCollectorForm.reset();
+        closeAddCollectorModal();
+        render();
+      } else {
+        msg.textContent = 'Username already exists. Choose another.';
+        msg.style.color = 'var(--status-urgent)';
       }
     });
   }

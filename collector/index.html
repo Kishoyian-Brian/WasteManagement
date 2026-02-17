@@ -63,52 +63,7 @@
   </footer>
 
   <script src="../js/data.js"></script>
-  <script>
-    function render() {
-      var approved = WasteData.getApproved();
-      var collected = WasteData.getCollected();
-
-      document.getElementById('stat-assigned').textContent = approved.length;
-      document.getElementById('stat-completed').textContent = collected.length;
-
-      document.getElementById('notification-banner').style.display = approved.length ? 'flex' : 'none';
-
-      var assignedList = document.getElementById('assigned-list');
-      document.getElementById('assigned-empty').style.display = approved.length ? 'none' : 'block';
-      assignedList.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
-
-      approved.forEach(function(r) {
-        var card = document.createElement('div');
-        card.className = 'report-card notification-card';
-        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge approved">Approved</span></div>' +
-          '<div class="report-card-body"><p><strong>' + (r.name || 'Anonymous') + '</strong> — ' + (r.location || 'Unknown') + '</p>' +
-          '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>' +
-          '<div class="report-card-actions"><button class="btn btn-primary btn-collect" data-id="' + r.id + '">Mark Collected</button></div>';
-        assignedList.appendChild(card);
-      });
-
-      assignedList.querySelectorAll('.btn-collect').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          if (WasteData.markCollected(btn.dataset.id)) {
-            render();
-          }
-        });
-      });
-
-      var collectedList = document.getElementById('collected-list');
-      document.getElementById('collected-empty').style.display = collected.length ? 'none' : 'block';
-      collectedList.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
-
-      collected.slice(0, 10).forEach(function(r) {
-        var card = document.createElement('div');
-        card.className = 'report-card report-card-done';
-        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge collected">Collected</span></div>' +
-          '<div class="report-card-body"><p>' + (r.location || 'Unknown') + '</p><p class="report-meta">' + (r.wasteType || 'N/A') + '</p></div>';
-        collectedList.appendChild(card);
-      });
-    }
-    render();
-  </script>
+  <script src="collector.js"></script>
 
 </body>
 </html>
