@@ -51,20 +51,165 @@
     });
   }
 
+  var allReportsFilter = 'all';
+  var allReportsSearch = '';
+  var allReportsSort = 'newest';
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    var d = new Date(dateStr);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
   function renderAllReports() {
     var all = WasteData.getAll();
-    var list = document.getElementById('all-reports-list');
-    if (!list) return;
-    list.innerHTML = '';
-    all.forEach(function(r) {
-      var card = document.createElement('div');
-      card.className = 'report-card report-card-done';
-      card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + (r.id || '').slice(1, 9) + '</span><span class="report-badge ' + r.status + '">' + r.status + '</span></div>' +
-        '<div class="report-card-body"><p><strong>' + escapeHtml(r.name || 'Anonymous') + '</strong> — ' + escapeHtml(r.location || 'Unknown') + '</p>' +
-        '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>';
-      list.appendChild(card);
+    var tbody = document.getElementById('all-reports-list');
+    var tableEl = document.getElementById('reports-table');
+    var emptyEl = document.getElementById('all-reports-empty');
+    if (!tbody) return;
+
+    // Update stats
+    var pending = WasteData.getPending();
+    var approved = WasteData.getApproved();
+    var collected = WasteData.getCollected();
+    var totalEl = document.getElementById('all-reports-total');
+    var pendingEl = document.getElementById('all-reports-pending');
+    var approvedEl = document.getElementById('all-reports-approved');
+    var collectedEl = document.getElementById('all-reports-collected');
+    if (totalEl) totalEl.textContent = all.length;
+    if (pendingEl) pendingEl.textContent = pending.length;
+    if (approvedEl) approvedEl.textContent = approved.length;
+    if (collectedEl) collectedEl.textContent = collected.length;
+
+    // Filter by status
+    var filtered = all;
+    if (allReportsFilter !== 'all') {
+      filtered = all.filter(function(r) { return r.status === allReportsFilter; });
+    }
+
+    // Search filter
+    if (allReportsSearch) {
+      var searchLower = allReportsSearch.toLowerCase();
+      filtered = filtered.filter(function(r) {
+        var id = (r.id || '').toLowerCase();
+        var name = (r.name || '').toLowerCase();
+        var location = (r.location || '').toLowerCase();
+        return id.includes(searchLower) || name.includes(searchLower) || location.includes(searchLower);
+      });
+    }
+
+    // Sort
+    filtered = filtered.slice();
+    if (allReportsSort === 'newest') {
+      filtered.sort(function(a, b) {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    } else if (allReportsSort === 'oldest') {
+      filtered.sort(function(a, b) {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      });
+    } else if (allReportsSort === 'status') {
+      var statusOrder = { pending: 1, approved: 2, collected: 3 };
+      filtered.sort(function(a, b) {
+        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      });
+    }
+
+    // Render table
+    tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
+    if (tableEl) tableEl.style.display = filtered.length === 0 ? 'none' : 'table';
+
+    filtered.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var actionsHtml = '<button type="button" class="btn btn-sm btn-view" data-id="' + escapeHtml(r.id) + '">View</button>';
+      if (r.status === 'pending') {
+        actionsHtml += '<button type="button" class="btn btn-sm btn-approve" data-id="' + escapeHtml(r.id) + '">Approve</button>';
+        actionsHtml += '<button type="button" class="btn btn-sm btn-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>';
+      } else if (r.status === 'approved') {
+        actionsHtml += '<button type="button" class="btn btn-sm btn-collect" data-id="' + escapeHtml(r.id) + '">Mark Collected</button>';
+      }
+      tr.innerHTML =
+        '<td><a href="#" class="report-id-link" data-id="' + escapeHtml(r.id) + '">#' + escapeHtml((r.id || '').slice(1, 9)) + '</a></td>' +
+        '<td>' + escapeHtml(r.name || 'Anonymous') + '</td>' +
+        '<td>' + escapeHtml(r.location || 'Unknown') + '</td>' +
+        '<td>' + escapeHtml(r.wasteType || 'N/A') + '</td>' +
+        '<td>' + (r.fillLevel || 0) + '%</td>' +
+        '<td><span class="report-badge ' + r.status + '">' + r.status + '</span></td>' +
+        '<td>' + formatDate(r.createdAt) + '</td>' +
+        '<td class="table-actions">' + actionsHtml + '</td>';
+      tbody.appendChild(tr);
     });
-    if (all.length === 0) list.innerHTML = '<p class="empty-state">No reports yet.</p>';
+
+    // Attach event listeners
+    tbody.querySelectorAll('.btn-view, .report-id-link').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showReportDetails(btn.dataset.id);
+      });
+    });
+    tbody.querySelectorAll('.btn-approve').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.approve(btn.dataset.id)) render();
+      });
+    });
+    tbody.querySelectorAll('.btn-reject').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.reject(btn.dataset.id)) render();
+      });
+    });
+    tbody.querySelectorAll('.btn-collect').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.markCollected(btn.dataset.id)) render();
+      });
+    });
+  }
+
+  function showReportDetails(id) {
+    var report = WasteData.getReport(id);
+    if (!report) return;
+    var modal = document.getElementById('report-details-modal');
+    var content = document.getElementById('report-details-content');
+    if (!modal || !content) return;
+    content.innerHTML =
+      '<div class="detail-row"><strong>Report ID:</strong> <span>#' + escapeHtml((report.id || '').slice(1)) + '</span></div>' +
+      '<div class="detail-row"><strong>Status:</strong> <span class="report-badge ' + report.status + '">' + report.status + '</span></div>' +
+      '<div class="detail-row"><strong>Reporter:</strong> <span>' + escapeHtml(report.name || 'Anonymous') + '</span></div>' +
+      '<div class="detail-row"><strong>Location:</strong> <span>' + escapeHtml(report.location || 'Unknown') + '</span></div>' +
+      '<div class="detail-row"><strong>Waste Type:</strong> <span>' + escapeHtml(report.wasteType || 'N/A') + '</span></div>' +
+      '<div class="detail-row"><strong>Fill Level:</strong> <span>' + (report.fillLevel || 0) + '%</span></div>' +
+      '<div class="detail-row"><strong>Created:</strong> <span>' + formatDate(report.createdAt) + '</span></div>' +
+      (report.approvedAt ? '<div class="detail-row"><strong>Approved:</strong> <span>' + formatDate(report.approvedAt) + '</span></div>' : '') +
+      (report.collectedAt ? '<div class="detail-row"><strong>Collected:</strong> <span>' + formatDate(report.collectedAt) + '</span></div>' : '') +
+      '<div class="detail-actions" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">' +
+      (report.status === 'pending' ? '<button type="button" class="btn btn-approve" data-id="' + escapeHtml(report.id) + '">Approve</button> <button type="button" class="btn btn-reject" data-id="' + escapeHtml(report.id) + '">Reject</button>' : '') +
+      (report.status === 'approved' ? '<button type="button" class="btn btn-collect" data-id="' + escapeHtml(report.id) + '">Mark Collected</button>' : '') +
+      '</div>';
+    modal.classList.remove('is-hidden');
+    content.querySelectorAll('.btn-approve').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.approve(btn.dataset.id)) {
+          modal.classList.add('is-hidden');
+          render();
+        }
+      });
+    });
+    content.querySelectorAll('.btn-reject').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.reject(btn.dataset.id)) {
+          modal.classList.add('is-hidden');
+          render();
+        }
+      });
+    });
+    content.querySelectorAll('.btn-collect').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.markCollected(btn.dataset.id)) {
+          modal.classList.add('is-hidden');
+          render();
+        }
+      });
+    });
   }
 
   function renderCollectors() {
@@ -190,6 +335,46 @@
   if (addCollectorFormWrap) {
     addCollectorFormWrap.addEventListener('click', function(e) {
       if (e.target === addCollectorFormWrap) closeAddCollectorModal();
+    });
+  }
+
+  // All Reports filters and search
+  document.querySelectorAll('.btn-filter').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.btn-filter').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      allReportsFilter = btn.dataset.filter;
+      renderAllReports();
+    });
+  });
+
+  var reportsSearch = document.getElementById('reports-search');
+  if (reportsSearch) {
+    reportsSearch.addEventListener('input', function() {
+      allReportsSearch = this.value.trim();
+      renderAllReports();
+    });
+  }
+
+  var reportsSort = document.getElementById('reports-sort');
+  if (reportsSort) {
+    reportsSort.addEventListener('change', function() {
+      allReportsSort = this.value;
+      renderAllReports();
+    });
+  }
+
+  // Modal close
+  var modalCloseBtn = document.getElementById('modal-close-btn');
+  var reportModal = document.getElementById('report-details-modal');
+  if (modalCloseBtn && reportModal) {
+    modalCloseBtn.addEventListener('click', function() {
+      reportModal.classList.add('is-hidden');
+    });
+    reportModal.addEventListener('click', function(e) {
+      if (e.target === reportModal) {
+        reportModal.classList.add('is-hidden');
+      }
     });
   }
 

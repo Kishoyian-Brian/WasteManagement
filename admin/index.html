@@ -175,10 +175,85 @@
       <section id="panel-all-reports" class="admin-panel">
         <h1 class="page-title">All Reports</h1>
         <p class="page-subtitle">Full list of waste reports (all statuses).</p>
+        
+        <!-- Statistics Summary -->
+        <div class="stats-row" style="margin-bottom: 1.5rem;">
+          <div class="card stat-card">
+            <h3>Total</h3>
+            <span class="card-value" id="all-reports-total">0</span>
+            <p>All reports</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Pending</h3>
+            <span class="card-value" id="all-reports-pending">0</span>
+            <p>Awaiting approval</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Approved</h3>
+            <span class="card-value" id="all-reports-approved">0</span>
+            <p>Sent to collectors</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Collected</h3>
+            <span class="card-value" id="all-reports-collected">0</span>
+            <p>Completed</p>
+          </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="reports-filters" style="margin-bottom: 1.5rem;">
+          <div class="filter-group">
+            <label style="font-weight: 600; margin-right: 0.75rem; color: var(--text);">Filter by status:</label>
+            <div class="status-filter-buttons">
+              <button type="button" class="btn-filter active" data-filter="all">All</button>
+              <button type="button" class="btn-filter" data-filter="pending">Pending</button>
+              <button type="button" class="btn-filter" data-filter="approved">Approved</button>
+              <button type="button" class="btn-filter" data-filter="collected">Collected</button>
+            </div>
+          </div>
+          <div class="filter-group" style="margin-top: 1rem;">
+            <input type="text" id="reports-search" class="search-input" placeholder="Search by ID, name, or location..." style="max-width: 400px;">
+            <select id="reports-sort" class="sort-select" style="margin-left: 1rem;">
+              <option value="newest">Sort: Newest first</option>
+              <option value="oldest">Sort: Oldest first</option>
+              <option value="status">Sort: By status</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reports Table -->
         <div class="report-section">
-          <div id="all-reports-list" class="report-list"></div>
+          <div class="reports-table-wrap">
+            <table id="reports-table" class="reports-table">
+              <thead>
+                <tr>
+                  <th>Report ID</th>
+                  <th>Reporter</th>
+                  <th>Location</th>
+                  <th>Type</th>
+                  <th>Fill Level</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="all-reports-list"></tbody>
+            </table>
+            <p id="all-reports-empty" class="empty-state" style="display: none;">No reports found.</p>
+          </div>
         </div>
       </section>
+
+      <!-- Report Details Modal -->
+      <div id="report-details-modal" class="modal is-hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Report Details</h2>
+            <button type="button" class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <div class="modal-body" id="report-details-content"></div>
+        </div>
+      </div>
 
       <!-- Collectors panel -->
       <section id="panel-collectors" class="admin-panel">
