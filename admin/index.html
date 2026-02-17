@@ -13,6 +13,11 @@
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       Rictei Smart City
     </a>
+    <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="../report.html">Report Waste</a></li>
@@ -22,7 +27,8 @@
   </nav>
 
   <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="admin-sidebar" id="admin-sidebar">
       <h2 class="sidebar-title">Admin</h2>
       <nav class="sidebar-nav">
         <a href="#" class="sidebar-link active" data-panel="dashboard">
@@ -530,6 +536,53 @@
           window.location.href = '../login.html';
         }
       }
+      
+      // Hamburger menu toggle for mobile
+      var hamburgerBtn = document.getElementById('hamburger-btn');
+      var sidebar = document.getElementById('admin-sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      
+      function toggleSidebar() {
+        sidebar.classList.toggle('sidebar-open');
+        hamburgerBtn.classList.toggle('is-active');
+        overlay.classList.toggle('is-active');
+        document.body.classList.toggle('sidebar-open');
+      }
+      
+      function closeSidebar() {
+        sidebar.classList.remove('sidebar-open');
+        hamburgerBtn.classList.remove('is-active');
+        overlay.classList.remove('is-active');
+        document.body.classList.remove('sidebar-open');
+      }
+      
+      if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          toggleSidebar();
+        });
+      }
+      
+      if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+      }
+      
+      // Close sidebar when clicking on a sidebar link
+      var sidebarLinks = document.querySelectorAll('.sidebar-link');
+      sidebarLinks.forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth <= 768) {
+            closeSidebar();
+          }
+        });
+      });
+      
+      // Close sidebar on window resize if switching to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+          closeSidebar();
+        }
+      });
     })();
   </script>
   <script src="admin.js"></script>
