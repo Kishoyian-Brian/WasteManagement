@@ -13,11 +13,13 @@
     var link = document.querySelector('.sidebar-link[data-panel="' + panelId + '"]');
     if (panel) panel.classList.add('active');
     if (link) link.classList.add('active');
-    // Re-render heat map when panel is shown (map needs to be visible to initialize)
+    // Re-render specific panels when shown
     if (panelId === 'heatmap') {
       setTimeout(function() {
         renderHeatMap();
       }, 100);
+    } else if (panelId === 'dashboard') {
+      renderDashboard();
     }
   }
 
@@ -25,6 +27,16 @@
     a.addEventListener('click', function(e) {
       e.preventDefault();
       showPanel(a.dataset.panel);
+    });
+  });
+
+  // Quick action buttons - navigate to panels
+  document.querySelectorAll('.quick-action-btn, .stat-link').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (btn.dataset.panel) {
+        showPanel(btn.dataset.panel);
+      }
     });
   });
 
@@ -340,6 +352,9 @@
   var allReportsFilter = 'all';
   var allReportsSearch = '';
   var allReportsSort = 'newest';
+  var pendingSearch = '';
+  var pendingSort = 'newest';
+  var selectedPendingReports = [];
 
   function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
@@ -498,6 +513,117 @@
     });
   }
 
+  function renderPendingReports() {
+    var pending = WasteData.getPending();
+    var tbody = document.getElementById('pending-list');
+    var tableEl = document.getElementById('pending-table');
+    var emptyEl = document.getElementById('pending-empty');
+    var statCount = document.getElementById('pending-stat-count');
+    var statUrgent = document.getElementById('pending-stat-urgent');
+    
+    if (!tbody) return;
+    
+    // Update stats
+    var urgentCount = pending.filter(function(r) { return (r.fillLevel || 0) >= 80; }).length;
+    if (statCount) statCount.textContent = pending.length;
+    if (statUrgent) statUrgent.textContent = urgentCount;
+    
+    // Filter by search
+    var filtered = pending.slice();
+    if (pendingSearch) {
+      var searchLower = pendingSearch.toLowerCase();
+      filtered = filtered.filter(function(r) {
+        var id = (r.id || '').toLowerCase();
+        var name = (r.name || '').toLowerCase();
+        var location = (r.location || '').toLowerCase();
+        return id.includes(searchLower) || name.includes(searchLower) || location.includes(searchLower);
+      });
+    }
+    
+    // Sort
+    if (pendingSort === 'newest') {
+      filtered.sort(function(a, b) {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    } else if (pendingSort === 'oldest') {
+      filtered.sort(function(a, b) {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      });
+    } else if (pendingSort === 'fill-high') {
+      filtered.sort(function(a, b) {
+        return (b.fillLevel || 0) - (a.fillLevel || 0);
+      });
+    } else if (pendingSort === 'fill-low') {
+      filtered.sort(function(a, b) {
+        return (a.fillLevel || 0) - (b.fillLevel || 0);
+      });
+    }
+    
+    // Render table
+    tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
+    if (tableEl) tableEl.style.display = filtered.length === 0 ? 'none' : 'table';
+    
+    filtered.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var isUrgent = (r.fillLevel || 0) >= 80;
+      var fillClass = isUrgent ? 'fill-urgent' : (r.fillLevel || 0) >= 50 ? 'fill-warning' : 'fill-ok';
+      var isSelected = selectedPendingReports.indexOf(r.id) !== -1;
+      
+      tr.innerHTML =
+        '<td><input type="checkbox" class="pending-checkbox" data-id="' + escapeHtml(r.id) + '"' + (isSelected ? ' checked' : '') + '></td>' +
+        '<td><a href="#" class="report-id-link" data-id="' + escapeHtml(r.id) + '">#' + escapeHtml((r.id || '').slice(1, 9)) + '</a></td>' +
+        '<td>' + escapeHtml(r.name || 'Anonymous') + '</td>' +
+        '<td>' + escapeHtml(r.location || 'Unknown') + '</td>' +
+        '<td>' + escapeHtml(r.wasteType || 'N/A') + '</td>' +
+        '<td><span class="fill-badge ' + fillClass + '">' + (r.fillLevel || 0) + '%</span>' + (isUrgent ? ' <span class="urgent-indicator">⚠</span>' : '') + '</td>' +
+        '<td>' + formatDate(r.createdAt) + '</td>' +
+        '<td class="table-actions">' +
+          '<button type="button" class="btn btn-sm btn-view" data-id="' + escapeHtml(r.id) + '">View</button>' +
+          '<button type="button" class="btn btn-sm btn-approve" data-id="' + escapeHtml(r.id) + '">Approve</button>' +
+          '<button type="button" class="btn btn-sm btn-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+    
+    // Attach event listeners
+    tbody.querySelectorAll('.btn-view, .report-id-link').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showReportDetails(btn.dataset.id);
+      });
+    });
+    tbody.querySelectorAll('.btn-approve').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.approve(btn.dataset.id)) render();
+      });
+    });
+    tbody.querySelectorAll('.btn-reject').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.reject(btn.dataset.id)) render();
+      });
+    });
+    tbody.querySelectorAll('.pending-checkbox').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var id = cb.dataset.id;
+        var idx = selectedPendingReports.indexOf(id);
+        if (cb.checked && idx === -1) {
+          selectedPendingReports.push(id);
+        } else if (!cb.checked && idx !== -1) {
+          selectedPendingReports.splice(idx, 1);
+        }
+        updateSelectAllCheckbox();
+      });
+    });
+  }
+  
+  function updateSelectAllCheckbox() {
+    var selectAll = document.getElementById('pending-select-all');
+    var checkboxes = document.querySelectorAll('.pending-checkbox');
+    if (!selectAll || checkboxes.length === 0) return;
+    selectAll.checked = checkboxes.length > 0 && selectedPendingReports.length === checkboxes.length;
+  }
+
   function renderCollectors() {
     var collectors = WasteData.getCollectors();
     var tbody = document.getElementById('collectors-list');
@@ -534,12 +660,14 @@
     }
   }
 
-  function render() {
+  function renderDashboard() {
     var all = WasteData.getAll();
     var pending = WasteData.getPending();
     var approved = WasteData.getApproved();
     var collected = WasteData.getCollected();
+    var collectors = WasteData.getCollectors();
 
+    // Main stats
     var statTotal = document.getElementById('stat-total');
     var statPending = document.getElementById('stat-pending');
     var statApproved = document.getElementById('stat-approved');
@@ -549,35 +677,135 @@
     if (statApproved) statApproved.textContent = approved.length;
     if (statCollected) statCollected.textContent = collected.length;
 
-    var list = document.getElementById('pending-list');
-    var empty = document.getElementById('pending-empty');
-    if (empty) empty.style.display = pending.length ? 'none' : 'block';
+    // Secondary stats
+    var urgentCount = pending.filter(function(r) { return (r.fillLevel || 0) >= 80; }).length;
+    var statUrgent = document.getElementById('stat-urgent');
+    var statCollectors = document.getElementById('stat-collectors');
+    var statRate = document.getElementById('stat-rate');
+    var statToday = document.getElementById('stat-today');
+    
+    if (statUrgent) statUrgent.textContent = urgentCount;
+    if (statCollectors) statCollectors.textContent = collectors.length;
+    if (statRate) {
+      var rate = all.length > 0 ? Math.round((collected.length / all.length) * 100) : 0;
+      statRate.textContent = rate + '%';
+    }
+    
+    // Today's activity (reports created today)
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var todayCount = all.filter(function(r) {
+      if (!r.createdAt) return false;
+      var created = new Date(r.createdAt);
+      return created >= today;
+    }).length;
+    if (statToday) statToday.textContent = todayCount;
 
-    if (list) {
-      list.querySelectorAll('.report-card').forEach(function(el) { el.remove(); });
-      pending.forEach(function(r) {
-        var card = document.createElement('div');
-        card.className = 'report-card';
-        card.dataset.id = r.id;
-        card.innerHTML = '<div class="report-card-header"><span class="report-id">#' + r.id.slice(1, 9) + '</span><span class="report-badge pending">Pending</span></div>' +
-          '<div class="report-card-body"><p><strong>' + (r.name || 'Anonymous') + '</strong> — ' + (r.location || 'Unknown') + '</p>' +
-          '<p class="report-meta">Type: ' + (r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%</p></div>' +
-          '<div class="report-card-actions"><button class="btn btn-approve" data-id="' + r.id + '">Approve</button><button class="btn btn-reject" data-id="' + r.id + '">Reject</button></div>';
-        list.appendChild(card);
-      });
+    // Progress bars
+    var total = all.length || 1;
+    var pendingPct = Math.round((pending.length / total) * 100);
+    var approvedPct = Math.round((approved.length / total) * 100);
+    var collectedPct = Math.round((collected.length / total) * 100);
+    
+    var progressPendingBar = document.getElementById('progress-pending-bar');
+    var progressApprovedBar = document.getElementById('progress-approved-bar');
+    var progressCollectedBar = document.getElementById('progress-collected-bar');
+    var progressPendingCount = document.getElementById('progress-pending-count');
+    var progressApprovedCount = document.getElementById('progress-approved-count');
+    var progressCollectedCount = document.getElementById('progress-collected-count');
+    
+    if (progressPendingBar) progressPendingBar.style.width = pendingPct + '%';
+    if (progressApprovedBar) progressApprovedBar.style.width = approvedPct + '%';
+    if (progressCollectedBar) progressCollectedBar.style.width = collectedPct + '%';
+    if (progressPendingCount) progressPendingCount.textContent = pending.length;
+    if (progressApprovedCount) progressApprovedCount.textContent = approved.length;
+    if (progressCollectedCount) progressCollectedCount.textContent = collected.length;
 
-      list.querySelectorAll('.btn-approve').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          if (WasteData.approve(btn.dataset.id)) render();
-        });
-      });
-      list.querySelectorAll('.btn-reject').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          if (WasteData.reject(btn.dataset.id)) render();
-        });
-      });
+    // Quick actions badge
+    var quickPendingCount = document.getElementById('quick-pending-count');
+    if (quickPendingCount) {
+      quickPendingCount.textContent = pending.length;
+      quickPendingCount.style.display = pending.length > 0 ? 'inline-block' : 'none';
     }
 
+    // Recent pending reports preview
+    renderPendingPreview(pending.slice(0, 5));
+
+    // Recent activity
+    renderRecentActivity(all.slice(0, 10));
+  }
+
+  function renderPendingPreview(pendingReports) {
+    var container = document.getElementById('dashboard-pending-preview');
+    if (!container) return;
+    
+    if (pendingReports.length === 0) {
+      container.innerHTML = '<p class="empty-state">No pending reports.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    pendingReports.forEach(function(r) {
+      var isUrgent = (r.fillLevel || 0) >= 80;
+      var card = document.createElement('div');
+      card.className = 'pending-preview-card';
+      card.innerHTML =
+        '<div class="preview-header">' +
+          '<span class="preview-id">#' + escapeHtml((r.id || '').slice(1, 9)) + '</span>' +
+          '<span class="report-badge pending">Pending</span>' +
+        '</div>' +
+        '<div class="preview-body">' +
+          '<p><strong>' + escapeHtml(r.name || 'Anonymous') + '</strong> — ' + escapeHtml(r.location || 'Unknown') + '</p>' +
+          '<p class="preview-meta">Type: ' + escapeHtml(r.wasteType || 'N/A') + ' · Fill: ' + (r.fillLevel || 0) + '%' + (isUrgent ? ' <span class="urgent-indicator">⚠ Urgent</span>' : '') + '</p>' +
+        '</div>' +
+        '<div class="preview-actions">' +
+          '<button type="button" class="btn btn-sm btn-approve" data-id="' + escapeHtml(r.id) + '">Approve</button>' +
+          '<button type="button" class="btn btn-sm btn-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
+        '</div>';
+      container.appendChild(card);
+    });
+
+    // Attach event listeners
+    container.querySelectorAll('.btn-approve').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.approve(btn.dataset.id)) render();
+      });
+    });
+    container.querySelectorAll('.btn-reject').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (WasteData.reject(btn.dataset.id)) render();
+      });
+    });
+  }
+
+  function renderRecentActivity(reports) {
+    var container = document.getElementById('recent-activity-list');
+    if (!container) return;
+    
+    if (reports.length === 0) {
+      container.innerHTML = '<p class="empty-state">No recent activity.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    reports.forEach(function(r) {
+      var activity = document.createElement('div');
+      activity.className = 'activity-item';
+      var statusIcon = r.status === 'pending' ? '⏳' : r.status === 'approved' ? '✓' : '✓✓';
+      var statusColor = r.status === 'pending' ? 'var(--status-warning)' : r.status === 'approved' ? 'var(--status-ok)' : 'var(--primary)';
+      activity.innerHTML =
+        '<span class="activity-icon" style="color: ' + statusColor + ';">' + statusIcon + '</span>' +
+        '<div class="activity-content">' +
+          '<p><strong>' + escapeHtml(r.name || 'Anonymous') + '</strong> — ' + escapeHtml(r.location || 'Unknown') + '</p>' +
+          '<p class="activity-meta">' + formatDate(r.createdAt) + ' · <span class="report-badge ' + r.status + '">' + r.status + '</span></p>' +
+        '</div>';
+      container.appendChild(activity);
+    });
+  }
+
+  function render() {
+    renderDashboard();
+    renderPendingReports();
     renderHeatMap();
     renderAllReports();
     renderCollectors();
@@ -621,6 +849,90 @@
   if (addCollectorFormWrap) {
     addCollectorFormWrap.addEventListener('click', function(e) {
       if (e.target === addCollectorFormWrap) closeAddCollectorModal();
+    });
+  }
+
+  // Pending Reports filters and search
+  var pendingSearchInput = document.getElementById('pending-search');
+  if (pendingSearchInput) {
+    pendingSearchInput.addEventListener('input', function() {
+      pendingSearch = this.value.trim();
+      renderPendingReports();
+    });
+  }
+
+  var pendingSortSelect = document.getElementById('pending-sort');
+  if (pendingSortSelect) {
+    pendingSortSelect.addEventListener('change', function() {
+      pendingSort = this.value;
+      renderPendingReports();
+    });
+  }
+
+  // Select all checkbox
+  var pendingSelectAll = document.getElementById('pending-select-all');
+  if (pendingSelectAll) {
+    pendingSelectAll.addEventListener('change', function() {
+      var checkboxes = document.querySelectorAll('.pending-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = pendingSelectAll.checked;
+        var id = cb.dataset.id;
+        var idx = selectedPendingReports.indexOf(id);
+        if (pendingSelectAll.checked && idx === -1) {
+          selectedPendingReports.push(id);
+        } else if (!pendingSelectAll.checked && idx !== -1) {
+          selectedPendingReports.splice(idx, 1);
+        }
+      });
+    });
+  }
+
+  // Bulk actions
+  var btnSelectAllPending = document.getElementById('btn-select-all-pending');
+  if (btnSelectAllPending) {
+    btnSelectAllPending.addEventListener('click', function() {
+      var selectAll = document.getElementById('pending-select-all');
+      if (selectAll) {
+        selectAll.checked = !selectAll.checked;
+        selectAll.dispatchEvent(new Event('change'));
+      }
+    });
+  }
+
+  var btnBulkApprove = document.getElementById('btn-bulk-approve');
+  if (btnBulkApprove) {
+    btnBulkApprove.addEventListener('click', function() {
+      if (selectedPendingReports.length === 0) {
+        alert('Please select at least one report to approve.');
+        return;
+      }
+      var approved = 0;
+      selectedPendingReports.forEach(function(id) {
+        if (WasteData.approve(id)) approved++;
+      });
+      selectedPendingReports = [];
+      alert('Approved ' + approved + ' report' + (approved !== 1 ? 's' : '') + '.');
+      render();
+    });
+  }
+
+  var btnBulkReject = document.getElementById('btn-bulk-reject');
+  if (btnBulkReject) {
+    btnBulkReject.addEventListener('click', function() {
+      if (selectedPendingReports.length === 0) {
+        alert('Please select at least one report to reject.');
+        return;
+      }
+      if (!confirm('Are you sure you want to reject ' + selectedPendingReports.length + ' report' + (selectedPendingReports.length !== 1 ? 's' : '') + '?')) {
+        return;
+      }
+      var rejected = 0;
+      selectedPendingReports.forEach(function(id) {
+        if (WasteData.reject(id)) rejected++;
+      });
+      selectedPendingReports = [];
+      alert('Rejected ' + rejected + ' report' + (rejected !== 1 ? 's' : '') + '.');
+      render();
     });
   }
 

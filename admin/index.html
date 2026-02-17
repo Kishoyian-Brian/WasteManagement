@@ -48,37 +48,196 @@
       <section id="panel-dashboard" class="admin-panel active">
         <h1 class="page-title">Dashboard</h1>
         <p class="page-subtitle">Overview of waste reports and system status.</p>
+        
+        <!-- Main Statistics -->
         <div class="stats-row">
           <div class="card stat-card">
             <h3>Total Reports</h3>
             <span class="card-value" id="stat-total">0</span>
             <p>All time</p>
           </div>
-          <div class="card stat-card">
+          <div class="card stat-card stat-card-pending">
             <h3>Pending</h3>
             <span class="card-value" id="stat-pending">0</span>
             <p>Awaiting approval</p>
+            <a href="#" class="stat-link" data-panel="pending">Review now →</a>
           </div>
-          <div class="card stat-card">
+          <div class="card stat-card stat-card-approved">
             <h3>Approved</h3>
             <span class="card-value" id="stat-approved">0</span>
             <p>Sent to collectors</p>
           </div>
-          <div class="card stat-card">
+          <div class="card stat-card stat-card-collected">
             <h3>Collected</h3>
             <span class="card-value" id="stat-collected">0</span>
             <p>Completed</p>
           </div>
+        </div>
+
+        <!-- Secondary Stats -->
+        <div class="stats-row" style="margin-top: 1rem;">
+          <div class="card stat-card">
+            <h3>Urgent Reports</h3>
+            <span class="card-value" id="stat-urgent">0</span>
+            <p>Fill level ≥ 80%</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Active Collectors</h3>
+            <span class="card-value" id="stat-collectors">0</span>
+            <p>Registered</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Collection Rate</h3>
+            <span class="card-value" id="stat-rate">0%</span>
+            <p>Completed / Total</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Today's Activity</h3>
+            <span class="card-value" id="stat-today">0</span>
+            <p>Reports created</p>
+          </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="dashboard-section" style="margin-top: 1.5rem;">
+          <h2 style="margin: 0 0 1rem; font-size: 1.1rem; color: var(--text);">Report Status Overview</h2>
+          <div class="progress-overview">
+            <div class="progress-item">
+              <div class="progress-label">
+                <span>Pending</span>
+                <span id="progress-pending-count">0</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill progress-pending" id="progress-pending-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">
+                <span>Approved</span>
+                <span id="progress-approved-count">0</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill progress-approved" id="progress-approved-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">
+                <span>Collected</span>
+                <span id="progress-collected-count">0</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill progress-collected" id="progress-collected-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions & Recent Activity -->
+        <div class="dashboard-grid" style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <!-- Quick Actions -->
+          <div class="dashboard-card">
+            <h2 style="margin: 0 0 1rem; font-size: 1.1rem; color: var(--text);">Quick Actions</h2>
+            <div class="quick-actions">
+              <a href="#" class="quick-action-btn" data-panel="pending">
+                <span class="action-icon">⏳</span>
+                <span>Review Pending Reports</span>
+                <span class="action-badge" id="quick-pending-count">0</span>
+              </a>
+              <a href="#" class="quick-action-btn" data-panel="add-drive">
+                <span class="action-icon">➕</span>
+                <span>Add New Drive</span>
+              </a>
+              <a href="#" class="quick-action-btn" data-panel="collectors">
+                <span class="action-icon">👷</span>
+                <span>Manage Collectors</span>
+              </a>
+              <a href="#" class="quick-action-btn" data-panel="heatmap">
+                <span class="action-icon">🗺️</span>
+                <span>View Heat Map</span>
+              </a>
+              <a href="#" class="quick-action-btn" data-panel="all-reports">
+                <span class="action-icon">📋</span>
+                <span>View All Reports</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="dashboard-card">
+            <h2 style="margin: 0 0 1rem; font-size: 1.1rem; color: var(--text);">Recent Activity</h2>
+            <div id="recent-activity-list" class="activity-list">
+              <p class="empty-state">No recent activity.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Pending Reports Preview -->
+        <div class="dashboard-section" style="margin-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="margin: 0; font-size: 1.1rem; color: var(--text);">Recent Pending Reports</h2>
+            <a href="#" class="btn btn-sm btn-primary" data-panel="pending">View All →</a>
+          </div>
+          <div id="dashboard-pending-preview" class="pending-preview-list"></div>
         </div>
       </section>
 
       <!-- Pending Reports panel -->
       <section id="panel-pending" class="admin-panel">
         <h1 class="page-title">Pending Reports</h1>
-        <p class="page-subtitle">Approve or reject reports before they go to collectors.</p>
+        <p class="page-subtitle">Review and approve or reject reports before they go to collectors.</p>
+        
+        <!-- Statistics -->
+        <div class="stats-row" style="margin-bottom: 1.5rem;">
+          <div class="card stat-card">
+            <h3>Pending</h3>
+            <span class="card-value" id="pending-stat-count">0</span>
+            <p>Awaiting review</p>
+          </div>
+          <div class="card stat-card">
+            <h3>Urgent</h3>
+            <span class="card-value" id="pending-stat-urgent">0</span>
+            <p>Fill level ≥ 80%</p>
+          </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="reports-filters" style="margin-bottom: 1.5rem;">
+          <div class="filter-group">
+            <input type="text" id="pending-search" class="search-input" placeholder="Search by ID, name, or location..." style="max-width: 400px;">
+            <select id="pending-sort" class="sort-select" style="margin-left: 1rem;">
+              <option value="newest">Sort: Newest first</option>
+              <option value="oldest">Sort: Oldest first</option>
+              <option value="fill-high">Sort: High fill level</option>
+              <option value="fill-low">Sort: Low fill level</option>
+            </select>
+          </div>
+          <div class="filter-group" style="margin-top: 1rem;">
+            <label style="font-weight: 600; margin-right: 0.75rem; color: var(--text);">Bulk actions:</label>
+            <button type="button" class="btn btn-primary" id="btn-select-all-pending">Select All</button>
+            <button type="button" class="btn btn-approve" id="btn-bulk-approve" style="margin-left: 0.5rem;">Approve Selected</button>
+            <button type="button" class="btn btn-reject" id="btn-bulk-reject" style="margin-left: 0.5rem;">Reject Selected</button>
+          </div>
+        </div>
+
+        <!-- Pending Reports Table -->
         <div class="report-section">
-          <div id="pending-list" class="report-list">
-            <p class="empty-state" id="pending-empty">No pending reports. <a href="../report.html">Submit a report</a> to test the flow.</p>
+          <div class="reports-table-wrap">
+            <table id="pending-table" class="reports-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;"><input type="checkbox" id="pending-select-all"></th>
+                  <th>Report ID</th>
+                  <th>Reporter</th>
+                  <th>Location</th>
+                  <th>Type</th>
+                  <th>Fill Level</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pending-list"></tbody>
+            </table>
+            <p id="pending-empty" class="empty-state" style="display: none;">No pending reports. <a href="../report.html">Submit a report</a> to test the flow.</p>
           </div>
         </div>
       </section>
