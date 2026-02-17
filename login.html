@@ -48,6 +48,18 @@
 
   <script src="js/data.js"></script>
   <script>
+    // Check if already logged in, redirect if so
+    (function() {
+      var session = WasteData.getSession();
+      if (session) {
+        if (session.role === 'admin') {
+          window.location.href = 'admin/index.html';
+        } else if (session.role === 'collector') {
+          window.location.href = 'collector/index.html';
+        }
+      }
+    })();
+
     document.getElementById('login-form').addEventListener('submit', function(e) {
       e.preventDefault();
       var username = document.getElementById('username').value.trim();
@@ -56,6 +68,9 @@
 
       var user = WasteData.authenticate(username, password);
       if (user) {
+        // Store session
+        WasteData.setSession(user);
+        // Redirect based on role
         if (user.role === 'admin') {
           window.location.href = 'admin/index.html';
         } else {

@@ -16,7 +16,9 @@
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="../report.html">Report Waste</a></li>
-      <li><a href="index.html" class="active">Admin</a></li>    </ul>
+      <li><a href="index.html" class="active">Admin</a></li>
+      <li><a href="#" id="logout-link" style="color: rgba(255,255,255,0.9);">Logout</a></li>
+    </ul>
   </nav>
 
   <div class="admin-layout">
@@ -29,8 +31,12 @@
         <a href="#" class="sidebar-link" data-panel="pending">
           <span class="sidebar-icon">⏳</span> Pending Reports
         </a>
-     
-  
+        <a href="#" class="sidebar-link" data-panel="add-drive">
+          <span class="sidebar-icon">➕</span> Add New Drive
+        </a>
+        <a href="#" class="sidebar-link" data-panel="bins">
+          <span class="sidebar-icon">🗑️</span> Smart Bins
+        </a>
         <a href="#" class="sidebar-link" data-panel="heatmap">
           <span class="sidebar-icon">🗺️</span> Heat Map
         </a>
@@ -39,6 +45,9 @@
         </a>
         <a href="#" class="sidebar-link" data-panel="collectors">
           <span class="sidebar-icon">👷</span> Collectors
+        </a>
+        <a href="#" class="sidebar-link sidebar-logout" id="sidebar-logout">
+          <span class="sidebar-icon">🚪</span> Logout
         </a>
       </nav>
     </aside>
@@ -484,6 +493,45 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <script src="../js/data.js"></script>
+  <script>
+    // Route protection - Admin only
+    (function() {
+      if (!WasteData.requireAuth('admin')) {
+        alert('Access denied. Admin login required.');
+        window.location.href = '../login.html';
+        return;
+      }
+      
+      // Show current user and setup logout
+      var session = WasteData.getSession();
+      if (session) {
+        // Top nav logout
+        var logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+          logoutLink.textContent = 'Logout (' + session.username + ')';
+          logoutLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
+          });
+        }
+        // Sidebar logout
+        var sidebarLogout = document.getElementById('sidebar-logout');
+        if (sidebarLogout) {
+          sidebarLogout.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
+          });
+        }
+      }
+      
+      function handleLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+          WasteData.clearSession();
+          window.location.href = '../login.html';
+        }
+      }
+    })();
+  </script>
   <script src="admin.js"></script>
 </body>
 </html>

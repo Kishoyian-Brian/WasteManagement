@@ -125,6 +125,38 @@
       return Object.keys(byLocation).map(function(loc) {
         return { location: loc, count: byLocation[loc] };
       }).sort(function(a, b) { return b.count - a.count; });
+    },
+    // Session management
+    setSession: function(user) {
+      sessionStorage.setItem('wasteUser', JSON.stringify({
+        username: user.username,
+        role: user.role,
+        loggedInAt: new Date().toISOString()
+      }));
+    },
+    getSession: function() {
+      try {
+        var data = sessionStorage.getItem('wasteUser');
+        return data ? JSON.parse(data) : null;
+      } catch (e) {
+        return null;
+      }
+    },
+    clearSession: function() {
+      sessionStorage.removeItem('wasteUser');
+    },
+    isAuthenticated: function() {
+      return this.getSession() !== null;
+    },
+    requireAuth: function(requiredRole) {
+      var session = this.getSession();
+      if (!session) {
+        return false;
+      }
+      if (requiredRole && session.role !== requiredRole) {
+        return false;
+      }
+      return true;
     }
   };
 })();

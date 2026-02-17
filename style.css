@@ -1073,6 +1073,12 @@ footer a {
   opacity: 0.95;
 }
 
+.sidebar-logout {
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding-top: 1rem;
+}
+
 .admin-main {
   flex: 1;
   padding: 2rem 1.5rem;
@@ -1816,6 +1822,352 @@ footer a {
 @media (max-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Collector Map Styles */
+.map-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.collector-map {
+  height: 500px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid var(--border);
+}
+
+.map-info-text {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+/* Responsive table improvements */
+@media (max-width: 600px) {
+  /* Make table headers sticky on scroll */
+  .reports-table-wrap {
+    position: relative;
+  }
+
+  .reports-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Better scroll indicator */
+  .reports-table-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(13, 92, 61, 0.1));
+    pointer-events: none;
+  }
+}
+
+/* ========== Collector Page Responsive ========== */
+@media (max-width: 768px) {
+  /* Map buttons stack vertically */
+  #btn-show-map,
+  #btn-calculate-route,
+  #btn-clear-route {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Map container full width */
+  .map-container {
+    padding: 0.75rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+
+  #collection-map {
+    height: 400px !important;
+    border-radius: 0 !important;
+  }
+
+  /* Filter group stacks */
+  .reports-filters .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-filters .filter-group .search-input,
+  .reports-filters .filter-group .sort-select {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 0.75rem;
+  }
+
+  /* Table horizontal scroll */
+  .reports-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 0 1rem;
+  }
+
+  .reports-table {
+    min-width: 600px;
+  }
+
+  /* Table actions stack */
+  .table-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .table-actions .btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  /* Stats row 2 columns on tablet */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  /* Stats single column on mobile */
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Map height smaller on mobile */
+  #collection-map {
+    height: 350px !important;
+  }
+
+  /* Notification banner wraps */
+  .notification-banner {
+    flex-wrap: wrap;
+    padding: 0.75rem;
+  }
+
+  /* Map info text smaller */
+  .map-container > div {
+    font-size: 0.75rem;
+  }
+
+  /* Table font size adjustment */
+  .reports-table {
+    font-size: 0.85rem;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Hide less important columns on very small screens */
+  .reports-table th:nth-child(3),
+  .reports-table td:nth-child(3) {
+    display: none; /* Hide Type column */
+  }
+}
+
+@media (max-width: 400px) {
+  /* Even smaller map */
+  #collection-map {
+    height: 300px !important;
+  }
+
+  /* Compact table */
+  .reports-table {
+    font-size: 0.8rem;
+    min-width: 500px;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  /* Hide Created date on very small screens */
+  .reports-table th:nth-child(5),
+  .reports-table td:nth-child(5) {
+    display: none;
+  }
+
+  /* Button text adjustments */
+  .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* Map controls responsive */
+.map-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .map-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .map-controls .btn {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Ensure tables are scrollable */
+  .reports-table-wrap {
+    position: relative;
+  }
+
+  .reports-table-wrap::before {
+    content: '← Scroll →';
+    position: absolute;
+    top: -1.5rem;
+    right: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Notification banner responsive */
+  .notification-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.75rem;
+  }
+
+  .notification-banner .notification-icon {
+    margin: 0 auto;
+  }
+}
+
+  /* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Larger tap targets */
+  .report-id-link,
+  .table-actions a {
+    padding: 0.5rem;
+    display: inline-block;
+  }
+
+  /* Map popup larger on touch devices */
+  .leaflet-popup-content {
+    min-width: 250px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 900px) and (orientation: landscape) {
+  .collector-map {
+    height: 300px !important;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Ensure proper mobile viewport handling */
+@media (max-width: 600px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Full width sections on mobile */
+  .report-section {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Better spacing */
+  main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Map container full width */
+  .map-container {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* Better button spacing */
+  .map-controls {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 0 1rem;
+  }
+
+  /* Stats cards better spacing */
+  .stats-row {
+    gap: 0.75rem;
+  }
+
+  /* Table scroll hint */
+  .reports-table-wrap {
+    position: relative;
+  }
+
+  .reports-table-wrap::before {
+    content: '← Swipe to scroll →';
+    display: block;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-style: italic;
+  }
+}
+
+/* Print styles */
+@media print {
+  .map-container,
+  .map-controls,
+  .reports-filters,
+  .btn {
+    display: none !important;
+  }
+
+  .reports-table {
+    font-size: 0.8rem;
   }
 }
 
