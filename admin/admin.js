@@ -13,6 +13,12 @@
     var link = document.querySelector('.sidebar-link[data-panel="' + panelId + '"]');
     if (panel) panel.classList.add('active');
     if (link) link.classList.add('active');
+    // Re-render heat map when panel is shown (map needs to be visible to initialize)
+    if (panelId === 'heatmap') {
+      setTimeout(function() {
+        renderHeatMap();
+      }, 100);
+    }
   }
 
   document.querySelectorAll('.sidebar-link').forEach(function(a) {
@@ -28,27 +34,307 @@
     return div.innerHTML;
   }
 
+  var heatMapInstance = null;
+  var heatLayer = null;
+
   function renderHeatMap() {
     var locations = WasteData.getCollectionLocations();
-    var list = document.getElementById('heatmap-list');
+    var mapContainer = document.getElementById('heatmap-map');
     var empty = document.getElementById('heatmap-empty');
-    if (!list) return;
-    list.innerHTML = '';
+    var planContent = document.getElementById('management-plan-content');
+    
     if (locations.length === 0) {
       if (empty) empty.style.display = 'block';
+      if (mapContainer) mapContainer.style.display = 'none';
+      if (planContent) planContent.innerHTML = '<div class="plan-card"><p class="empty-state">No collection data available for analysis.</p></div>';
       return;
     }
+    
     if (empty) empty.style.display = 'none';
+    if (mapContainer) mapContainer.style.display = 'block';
+
+    // Initialize or clear map
+    if (heatMapInstance) {
+      heatMapInstance.remove();
+    }
+    
+    if (!mapContainer) return;
+    
+    // Tharaka Nithi County coordinates (Kenya) - center of the county
+    // Approximate center: -0.3°S, 37.8°E
+    var countyCenter = [-0.3, 37.8];
+    var countyBounds = [
+      [-0.5, 37.5], // Southwest
+      [-0.1, 38.1]   // Northeast
+    ];
+    
+    // Create map centered on Tharaka Nithi County
+    heatMapInstance = L.map('heatmap-map').setView(countyCenter, 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(heatMapInstance);
+
+    // Add county boundary rectangle (visual reference)
+    L.rectangle(countyBounds, {
+      color: '#0d5c3d',
+      weight: 2,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      dashArray: '5, 5'
+    }).addTo(heatMapInstance).bindPopup('<strong>Tharaka Nithi County</strong>');
+
+    // Get collected reports with location data
+    var collected = WasteData.getCollected();
+    var locationGroups = {};
     var maxCount = Math.max.apply(null, locations.map(function(l) { return l.count; })) || 1;
-    locations.forEach(function(item) {
-      var pct = Math.round((item.count / maxCount) * 100);
-      var el = document.createElement('div');
-      el.className = 'heatmap-item';
-      el.innerHTML = '<span class="heatmap-label">' + escapeHtml(item.location) + '</span>' +
-        '<div class="heatmap-bar-wrap"><div class="heatmap-bar" style="width:' + pct + '%;"></div></div>' +
-        '<span class="heatmap-count">' + item.count + ' collection' + (item.count !== 1 ? 's' : '') + '</span>';
-      list.appendChild(el);
+    
+    // Group by location and get coordinates if available
+    collected.forEach(function(r) {
+      var loc = (r.location || 'Unknown').trim() || 'Unknown';
+      if (!locationGroups[loc]) {
+        locationGroups[loc] = {
+          location: loc,
+          count: 0,
+          reports: [],
+          lat: r.lat,
+          lng: r.lng
+        };
+      }
+      locationGroups[loc].count++;
+      locationGroups[loc].reports.push(r);
+      if (r.lat && r.lng && !locationGroups[loc].lat) {
+        locationGroups[loc].lat = r.lat;
+        locationGroups[loc].lng = r.lng;
+      }
     });
+
+    // Prepare heat map data points
+    var heatPoints = [];
+    var markers = [];
+    var bounds = [];
+    
+    // Process locations and create heat points
+    Object.keys(locationGroups).forEach(function(loc) {
+      var group = locationGroups[loc];
+      var coords = null;
+      
+      if (group.lat && group.lng) {
+        coords = [group.lat, group.lng];
+      } else {
+        // Try to geocode within Tharaka Nithi County
+        geocodeLocationInCounty(loc, group.count, function(lat, lng) {
+          if (lat && lng) {
+            addHeatPoint(lat, lng, group.count, maxCount);
+          }
+        });
+        return; // Skip this iteration, will be added async
+      }
+      
+      if (coords) {
+        // Add multiple points for intensity (more collections = more points)
+        for (var i = 0; i < group.count; i++) {
+          // Add slight random offset to create heat spread
+          var offsetLat = coords[0] + (Math.random() - 0.5) * 0.01;
+          var offsetLng = coords[1] + (Math.random() - 0.5) * 0.01;
+          heatPoints.push([offsetLat, offsetLng, group.count]);
+        }
+        
+        markers.push({
+          lat: coords[0],
+          lng: coords[1],
+          count: group.count,
+          location: loc
+        });
+        bounds.push(coords);
+      }
+    });
+
+    // Add heat layer if we have points
+    if (heatPoints.length > 0) {
+      addHeatLayer(heatPoints);
+    }
+
+    // Add markers with popups
+    markers.forEach(function(m) {
+      var intensity = m.count / maxCount;
+      var radius = Math.max(15, Math.min(50, 15 + intensity * 35));
+      
+      L.circleMarker([m.lat, m.lng], {
+        radius: radius,
+        fillColor: intensity > 0.7 ? '#c0392b' : intensity > 0.4 ? '#e74c3c' : '#ff6b6b',
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.6
+      }).addTo(heatMapInstance).bindPopup(
+        '<strong>' + escapeHtml(m.location) + '</strong><br>' +
+        m.count + ' collection' + (m.count !== 1 ? 's' : '') + '<br>' +
+        '<small>High activity area</small>'
+      );
+    });
+
+    // Fit map to county bounds or markers
+    if (bounds.length > 0) {
+      var group = new L.featureGroup(markers.map(function(m) {
+        return L.marker([m.lat, m.lng]);
+      }));
+      heatMapInstance.fitBounds(group.getBounds().pad(0.1));
+    } else {
+      heatMapInstance.fitBounds(countyBounds);
+    }
+
+    // Generate management plan
+    generateManagementPlan(locations, collected);
+  }
+
+  function addHeatLayer(points) {
+    if (heatLayer) {
+      heatLayer.forEach(function(layer) {
+        heatMapInstance.removeLayer(layer);
+      });
+      heatLayer = [];
+    } else {
+      heatLayer = [];
+    }
+    
+    // Create heat visualization using circles (works without heat plugin)
+    // More collections = larger, more opaque red circles
+    var maxIntensity = Math.max.apply(null, points.map(function(p) { return p[2] || 1; })) || 1;
+    
+    points.forEach(function(point) {
+      var lat = point[0];
+      var lng = point[1];
+      var intensity = point[2] || 1;
+      var normalizedIntensity = intensity / maxIntensity;
+      
+      // Create overlapping circles for heat effect
+      var radius = 200 + (normalizedIntensity * 300); // 200-500 meters
+      var opacity = 0.3 + (normalizedIntensity * 0.4); // 0.3-0.7 opacity
+      
+      // Color based on intensity: light pink to dark red
+      var color = normalizedIntensity > 0.7 ? '#c0392b' : 
+                  normalizedIntensity > 0.5 ? '#e74c3c' : 
+                  normalizedIntensity > 0.3 ? '#ef5350' : '#ffcdd2';
+      
+      var circle = L.circle([lat, lng], {
+        radius: radius,
+        fillColor: color,
+        color: color,
+        weight: 0,
+        fillOpacity: opacity
+      }).addTo(heatMapInstance);
+      
+      heatLayer.push(circle);
+    });
+  }
+
+  function addHeatPoint(lat, lng, count, maxCount) {
+    if (!heatMapInstance) return;
+    
+    var normalizedIntensity = count / maxCount;
+    var radius = 200 + (normalizedIntensity * 300);
+    var opacity = 0.3 + (normalizedIntensity * 0.4);
+    var color = normalizedIntensity > 0.7 ? '#c0392b' : 
+                normalizedIntensity > 0.5 ? '#e74c3c' : 
+                normalizedIntensity > 0.3 ? '#ef5350' : '#ffcdd2';
+    
+    var circle = L.circle([lat, lng], {
+      radius: radius,
+      fillColor: color,
+      color: color,
+      weight: 0,
+      fillOpacity: opacity
+    }).addTo(heatMapInstance);
+    
+    if (!heatLayer) heatLayer = [];
+    heatLayer.push(circle);
+  }
+
+  function geocodeLocationInCounty(locationName, count, callback) {
+    // Geocode with county context
+    var query = locationName + ', Tharaka Nithi County, Kenya';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1', {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.length > 0) {
+          var lat = parseFloat(data[0].lat);
+          var lng = parseFloat(data[0].lon);
+          callback(lat, lng);
+        }
+      })
+      .catch(function() {
+        callback(null, null);
+      });
+  }
+
+  function generateManagementPlan(locations, collected) {
+    var planContent = document.getElementById('management-plan-content');
+    if (!planContent) return;
+
+    var totalCollections = collected.length;
+    var topHotspots = locations.slice(0, 5);
+    var highActivity = locations.filter(function(l) { return l.count >= 3; });
+    var lowActivity = locations.filter(function(l) { return l.count === 1; });
+
+    var html = '';
+
+    // Top Hotspots Card
+    html += '<div class="plan-card plan-card-highlight">';
+    html += '<h3>🔥 Top Collection Hotspots</h3>';
+    if (topHotspots.length > 0) {
+      html += '<ul class="plan-list">';
+      topHotspots.forEach(function(loc, idx) {
+        var pct = totalCollections > 0 ? Math.round((loc.count / totalCollections) * 100) : 0;
+        html += '<li><strong>' + (idx + 1) + '. ' + escapeHtml(loc.location) + '</strong> — ' + loc.count + ' collections (' + pct + '% of total)</li>';
+      });
+      html += '</ul>';
+      html += '<p class="plan-recommendation"><strong>Recommendation:</strong> Increase collection frequency at these locations. Consider adding more bins or scheduling daily pickups.</p>';
+    } else {
+      html += '<p>No hotspots identified yet.</p>';
+    }
+    html += '</div>';
+
+    // Collection Frequency Analysis
+    html += '<div class="plan-card">';
+    html += '<h3>📅 Collection Frequency Plan</h3>';
+    html += '<p><strong>High Activity Areas (' + highActivity.length + '):</strong> Require frequent collection (daily or every 2 days)</p>';
+    html += '<p><strong>Medium Activity Areas:</strong> Standard collection schedule (weekly)</p>';
+    html += '<p><strong>Low Activity Areas (' + lowActivity.length + '):</strong> Can be collected less frequently (bi-weekly)</p>';
+    html += '<p class="plan-recommendation"><strong>Action:</strong> Create collection routes prioritizing high-activity zones. Assign dedicated collectors to hotspots.</p>';
+    html += '</div>';
+
+    // Resource Allocation
+    html += '<div class="plan-card">';
+    html += '<h3>👷 Resource Allocation</h3>';
+    var collectorsNeeded = Math.ceil(highActivity.length / 3);
+    html += '<p><strong>Current Status:</strong> ' + totalCollections + ' total collections across ' + locations.length + ' locations</p>';
+    html += '<p><strong>Recommended:</strong> ' + collectorsNeeded + ' collector' + (collectorsNeeded !== 1 ? 's' : '') + ' assigned to high-activity zones</p>';
+    html += '<p class="plan-recommendation"><strong>Strategy:</strong> Distribute collectors based on collection density. High-density areas need more resources.</p>';
+    html += '</div>';
+
+    // Route Optimization
+    html += '<div class="plan-card">';
+    html += '<h3>🗺️ Route Optimization</h3>';
+    html += '<p><strong>Efficiency Tip:</strong> Group nearby high-activity locations into single routes to reduce travel time.</p>';
+    if (topHotspots.length >= 2) {
+      html += '<p><strong>Suggested Route:</strong> ';
+      html += topHotspots.slice(0, 3).map(function(l) { return escapeHtml(l.location); }).join(' → ');
+      html += '</p>';
+    }
+    html += '<p class="plan-recommendation"><strong>Benefit:</strong> Optimized routes can reduce collection time by 20-30% and fuel costs.</p>';
+    html += '</div>';
+
+    // Bin Placement Recommendations
+    html += '<div class="plan-card">';
+    html += '<h3>🗑️ Bin Placement Strategy</h3>';
+    html += '<p><strong>High-Demand Areas:</strong> Consider adding additional bins at top ' + Math.min(3, topHotspots.length) + ' hotspot' + (topHotspots.length !== 1 ? 's' : '') + '</p>';
+    html += '<p><strong>Coverage:</strong> Ensure bins are within 200m of high-activity zones</p>';
+    html += '<p class="plan-recommendation"><strong>Impact:</strong> More bins reduce overflow and improve citizen satisfaction.</p>';
+    html += '</div>';
+
+    planContent.innerHTML = html;
   }
 
   var allReportsFilter = 'all';

@@ -1162,6 +1162,67 @@ footer a {
   color: var(--text-muted);
 }
 
+/* Management Plan Section */
+.management-plan-section {
+  margin-top: 2rem;
+}
+
+.plan-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.plan-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-card-highlight {
+  border-color: var(--status-warning);
+  background: linear-gradient(135deg, #fff9e6 0%, var(--bg-card) 100%);
+}
+
+.plan-card h3 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.plan-card p {
+  margin: 0.75rem 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.plan-list {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  color: var(--text);
+}
+
+.plan-list li {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.plan-recommendation {
+  margin-top: 1rem !important;
+  padding: 0.75rem;
+  background: var(--bg-light);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.plan-recommendation strong {
+  color: var(--primary);
+}
+
 /* Modal overlay */
 .modal-backdrop {
   position: fixed;

@@ -158,16 +158,25 @@
 
       <!-- Heat Map panel -->
       <section id="panel-heatmap" class="admin-panel">
-        <h1 class="page-title">Collection Heat Map</h1>
-        <p class="page-subtitle">Where waste is collected most — hotspots by location.</p>
-        <div class="heatmap-card">
-          <div class="heatmap-legend">
-            <span>Low</span>
-            <div class="heatmap-legend-bar"></div>
-            <span>High</span>
+        <h1 class="page-title">Collection Heat Map - Tharaka Nithi County</h1>
+        <p class="page-subtitle">Visual heat map showing areas where most garbage is collected. Red zones indicate high collection activity.</p>
+        
+        <!-- Map Container -->
+        <div class="heatmap-card" style="margin-bottom: 1.5rem;">
+          <div id="heatmap-map" style="height: 500px; border-radius: var(--radius-sm); overflow: hidden;"></div>
+          <div class="heatmap-legend" style="margin-top: 1rem;">
+            <span>Low Activity</span>
+            <div class="heatmap-legend-bar" style="background: linear-gradient(to right, #ffebee 0%, #ffcdd2 25%, #ef9a9a 50%, #e57373 75%, #c0392b 100%);"></div>
+            <span>High Activity (Red Zones)</span>
+            <span style="margin-left: 1rem; font-size: 0.85rem; color: var(--text-muted);">Red areas = Most garbage collected</span>
           </div>
-          <div id="heatmap-list" class="heatmap-list"></div>
-          <p id="heatmap-empty" class="empty-state" style="display:none;">No collection data yet. Collections will appear here once reports are marked collected.</p>
+          <p id="heatmap-empty" class="empty-state" style="display:none; margin-top: 1rem;">No collection data yet. Collections will appear here once reports are marked collected.</p>
+        </div>
+
+        <!-- Management Plan Section -->
+        <div class="management-plan-section">
+          <h2 style="margin: 0 0 1rem; font-size: 1.25rem; color: var(--text);">Management Plan & Insights</h2>
+          <div id="management-plan-content" class="plan-cards-grid"></div>
         </div>
       </section>
 
@@ -311,6 +320,10 @@
     <p>© 2026 Rictei Municipal Government — Smart City Waste Management</p>
   </footer>
 
+  <!-- Leaflet Map Library -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
   <script src="../js/data.js"></script>
   <script src="admin.js"></script>
 </body>
